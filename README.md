@@ -10,7 +10,36 @@
 python -m pip install -r requirements.txt
 ```
 
+还需要通过 NPM（包管理器）安装 Grok Build（构建代理）命令行工具：
+
+```powershell
+npm install -g @xai-official/grok
+grok --version
+```
+
+服务不会使用用户目录中的固定路径。Windows（微软操作系统）会运行 `npm prefix -g` 得到全局安装目录，并调用其中的 `grok.cmd`；macOS（苹果操作系统）与 Linux（开源操作系统）直接调用 `grok`。若命令行工具位于自定义位置，可通过 `GROK_COMMAND` 环境变量指定可执行文件的完整路径。
+
 在 Codex（代码智能体）全局配置中将入口设置为 `grok_build_mcp.py` 后，重启 Codex（代码智能体）。
+
+## Codex（代码智能体）配置
+
+在 `~/.codex/config.toml` 中添加：
+
+```toml
+[mcp_servers.grok_build]
+command = "python"
+args = ["/absolute/path/to/grok_build_mcp.py"]
+startup_timeout_sec = 30
+tool_timeout_sec = 21600
+enabled_tools = ["run_grok"]
+default_tools_approval_mode = "auto"
+
+[mcp_servers.grok_build.env]
+# 仅当 Grok（构建代理）命令不在标准 NPM（包管理器）目录时设置。
+GROK_COMMAND = "/custom/path/to/grok"
+```
+
+Windows（微软操作系统）示例中的 Python（编程语言）入口可写为 `D:\\Python\\python.exe`，脚本路径使用双反斜杠；若不设置 `GROK_COMMAND`，请保持 `npm` 可执行并完成上述全局安装。
 
 ## 工具
 

@@ -1,4 +1,5 @@
 import json
+import os
 import secrets
 import subprocess
 import time
@@ -34,6 +35,19 @@ mcp = FastMCP("grok_build")
 
 def normalized_cwd(cwd: str) -> str:
     return str(Path(cwd).resolve())
+
+
+def npm_global_command(command_name: str, environment_name: str) -> str:
+    configured_command = os.environ.get(environment_name)
+    if configured_command:
+        return configured_command
+    if os.name != "nt":
+        return command_name
+    npm_command = "npm.cmd"
+    npm_prefix = subprocess.check_output(
+        [npm_command, "prefix", "-g"], text=True, encoding="utf-8"
+    ).strip()
+    return str(Path(npm_prefix) / f"{command_name}.cmd")
 
 
 def new_session_id() -> str:
@@ -92,7 +106,7 @@ def run_grok(prompt: str, cwd: str) -> dict[str, Any]:
     stderr_log = LOG_DIR / f"{task_id}.stderr.log"
 
     command = [
-        "grok",
+        npm_global_command("grok", "GROK_COMMAND"),
         "--cwd",
         cwd,
         "--model",

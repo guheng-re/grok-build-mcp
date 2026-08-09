@@ -18,6 +18,7 @@ class GrokServerTests(unittest.TestCase):
             patch.object(grok_build_mcp, "STATE_DIR", self.root / "state"),
             patch.object(grok_build_mcp, "SESSIONS_FILE", self.root / "state" / "sessions.json"),
             patch.object(grok_build_mcp, "LOG_DIR", self.root / "logs"),
+            patch.object(grok_build_mcp, "npm_global_command", return_value="grok.cmd"),
         ]
         for item in self.patches:
             item.start()

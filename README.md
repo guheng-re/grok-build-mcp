@@ -41,6 +41,21 @@ GROK_COMMAND = "/custom/path/to/grok"
 
 Windows（微软操作系统）示例中的 Python（编程语言）入口可写为 `D:\\Python\\python.exe`，脚本路径使用双反斜杠；若不设置 `GROK_COMMAND`，请保持 `npm` 可执行并完成上述全局安装。
 
+## 推理强度
+
+当前版本固定使用 `grok-4.5`，但不会向 Grok Build（构建代理）传入 `--reasoning-effort`（推理强度参数）或 `--effort`（推理强度参数）。因此它使用 Grok Build（构建代理）在该模型下的默认推理强度。
+
+`run_grok` 的返回值会包含状态、退出码、结构化结果和日志路径，但**不包含**推理强度。日志同样不能证明模型实际消耗的内部推理词元。
+
+Grok Build（构建代理）命令行工具支持 `--reasoning-effort`（推理强度参数）。若未来为服务加入该配置，应将请求值以 `requested_reasoning_effort`（请求的推理强度）返回，例如：
+
+```toml
+[mcp_servers.grok_build.env]
+GROK_REASONING_EFFORT = "high"
+```
+
+这只能记录请求的档位；模型供应商通常不会公开实际内部推理量。
+
 ## 工具
 
 `run_grok` 仅接收以下必填参数：

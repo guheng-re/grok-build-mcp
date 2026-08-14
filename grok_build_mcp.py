@@ -1,6 +1,7 @@
 import json
 import os
 import secrets
+import shutil
 import subprocess
 import time
 import uuid
@@ -28,7 +29,8 @@ FINAL_SCHEMA = json.dumps(
     },
     separators=(",", ":"),
 )
-MODEL = "grok-4.5"
+MODEL = os.environ.get("GROK_MODEL", "grok-4.6")
+REASONING_EFFORT = os.environ.get("GROK_REASONING_EFFORT", "xhigh")
 
 mcp = FastMCP("grok_build")
 
@@ -37,17 +39,12 @@ def normalized_cwd(cwd: str) -> str:
     return str(Path(cwd).resolve())
 
 
-def npm_global_command(command_name: str, environment_name: str) -> str:
+def command_from_path(command_name: str, environment_name: str) -> str:
     configured_command = os.environ.get(environment_name)
     if configured_command:
         return configured_command
-    if os.name != "nt":
-        return command_name
-    npm_command = "npm.cmd"
-    npm_prefix = subprocess.check_output(
-        [npm_command, "prefix", "-g"], text=True, encoding="utf-8"
-    ).strip()
-    return str(Path(npm_prefix) / f"{command_name}.cmd")
+    command = f"{command_name}.cmd" if os.name == "nt" else command_name
+    return shutil.which(command) or command
 
 
 def new_session_id() -> str:
@@ -104,13 +101,17 @@ def run_grok(prompt: str, cwd: str) -> dict[str, Any]:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     stdout_log = LOG_DIR / f"{task_id}.stdout.log"
     stderr_log = LOG_DIR / f"{task_id}.stderr.log"
+    prompt_file = LOG_DIR / f"{task_id}.prompt.txt"
+    prompt_file.write_text(prompt, encoding="utf-8")
 
     command = [
-        npm_global_command("grok", "GROK_COMMAND"),
+        command_from_path("grok", "GROK_COMMAND"),
         "--cwd",
         cwd,
         "--model",
         MODEL,
+        "--reasoning-effort",
+        REASONING_EFFORT,
         "--always-approve",
         "--no-plan",
         "--no-memory",
@@ -123,7 +124,7 @@ def run_grok(prompt: str, cwd: str) -> dict[str, Any]:
         command.extend(["--resume", session_id])
     else:
         command.extend(["--session-id", session_id])
-    command.extend(["--single", prompt])
+    command.extend(["--prompt-file", str(prompt_file)])
 
     try:
         with stdout_log.open("wb") as stdout_file, stderr_log.open("wb") as stderr_file:
